@@ -1,0 +1,172 @@
+getgenv().autoPlace = false
+getgenv().autoUpgrade = false
+getgenv().autoRetry = false
+getgenv().autoPlaceAir = false
+
+
+local getTowers = {}
+local getTowersV2 = {}
+local towerName = ""
+local towerNameV2 = ""
+local plrCFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+local unitPlacer = ""
+
+
+
+
+for _,v in pairs(game:GetService("ReplicatedStorage").Towers:GetChildren()) do
+	insert = true
+	for _,v2 in pairs(getTowers) do if v2 == v.Name then insert = false end end
+	if insert then table.insert(getTowers, v.Name) end
+end
+
+for _,v in pairs(game:GetService("ReplicatedStorage").Towers:GetChildren()) do
+	insert = true
+	for _,v2 in pairs(getTowersV2) do if v2 == v.Name then insert = false end end
+	if insert then table.insert(getTowersV2, v.Name) end
+end
+
+local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+local Window = Library:CreateWindow({
+    Title = 'TowerFarm (ETD)',
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+local Tabs = {
+    Main = Window:AddTab('Farm'),
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+local LeftGroupBox = Tabs.Main:AddLeftGroupbox('FarmTab')
+LeftGroupBox:AddDropdown('Use Chosen Tower(Ground)', {
+    Values = getTowers,
+    Default = towerName, 
+    Multi = false, 
+
+    Text = 'Select Tower(Ground)',
+    Tooltip = 'Places Chosen Tower',
+
+    Callback = function(Value)
+        towerName = Value
+    end
+})
+LeftGroupBox:AddDropdown('Use Chosen Tower(Air)', {
+    Values = getTowersV2,
+    Default = towerNameV2, 
+    Multi = false, 
+
+    Text = 'Select Tower(AIR)',
+    Tooltip = 'Places Chosen Tower',
+
+    Callback = function(Value)
+        towerNameV2 = Value
+    end
+})
+LeftGroupBox:AddToggle('AutoPlace(Ground)', {
+    Text = 'AutoPlace(Ground)',
+    Default = false, 
+    Tooltip = 'AutoPlaces Unit', 
+
+    Callback = function(Value)
+        getgenv().autoPlace = Value
+    end
+})
+LeftGroupBox:AddToggle('AutoPlace(Air)', {
+    Text = 'AutoPlace(Air)',
+    Default = false, 
+    Tooltip = 'AutoPlaces Unit', 
+
+    Callback = function(Value)
+        getgenv().autoPlaceAir = Value
+    end
+})
+LeftGroupBox:AddToggle('AutoUpgrade', {
+    Text = 'AutoUpgrade',
+    Default = false, 
+    Tooltip = 'AutoPlaces Unit', 
+
+    Callback = function(Value)
+        getgenv().autoUpgrade = Value
+    end
+})
+LeftGroupBox:AddToggle('AutoRetry', {
+    Text = 'AutoRetry',
+    Default = false, 
+    Tooltip = 'AutoPlaces Unit', 
+
+    Callback = function(Value)
+        getgenv().autoRetry = Value
+    end
+})
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+task.spawn(function ()  
+            while task.wait() do
+                if getgenv().autoPlace then
+                            local args = {
+                                [1] = towerName,
+                                [2] = CFrame.new(-968.37158203125, -36.10781478881836, -227.38771057128906, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+                                [3] = 900
+                            }
+                             game:GetService("ReplicatedStorage"):WaitForChild("Functions"):WaitForChild("SpawnTower"):InvokeServer(unpack(args))
+            end
+        end
+end)
+
+
+task.spawn(function ()  
+            while task.wait() do
+                if getgenv().autoPlaceAir then
+                            local args = {
+                                [1] = towerNameV2,
+                                [2] = CFrame.new(-974.266846, -32.7454605, -238.442383, -1, 0, 0, 0, 1, 0, 0, 0, -1),
+                                [3] = 900
+                            }
+                            
+                            game:GetService("ReplicatedStorage"):WaitForChild("Functions"):WaitForChild("SpawnTower"):InvokeServer(unpack(args))
+                    end
+                end
+            end)
+
+
+task.spawn(function ()
+    while task.wait() do
+        if getgenv().autoUpgrade then
+            local args = {
+                [1] = workspace.Running.Towers:FindFirstChild(towerName)
+            }
+
+            game:GetService("ReplicatedStorage").Functions.UpgradeTower:InvokeServer(unpack(args))
+            local args = {
+                [1] = workspace.Running.Towers:FindFirstChild(towerNameV2)
+            }
+
+            game:GetService("ReplicatedStorage").Functions.UpgradeTower:InvokeServer(unpack(args))
+        end
+    end
+end)
+
+task.spawn(function ()
+    while task.wait() do
+        if getgenv().autoRetry then
+            if game:GetService("Players").LocalPlayer.PlayerGui.PlayerUI.WinScreen.Visible == true then
+                game:GetService("ReplicatedStorage").Events.Game.ReplayGame:InvokeServer()
+            end
+        end
+    end
+end)
+
+SaveManager:SetFolder('Test')
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+MenuGroup:AddButton('Unload', function() Library:Unload() end)
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'End', NoUI = true, Text = 'Menu keybind' })
+SaveManager:BuildConfigSection(Tabs['UI Settings'])
+ThemeManager:SetFolder('Test')
+SaveManager:SetFolder('Test/ETD')
+SaveManager:LoadAutoloadConfig()
