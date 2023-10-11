@@ -1,0 +1,85 @@
+-- Higher distance = WAY less fps. Let's hope your CPU is good.
+
+local MAX_DISTANCE = 25 -- MAX SETTING: 25
+local SPEED = 0.5 -- Lower: Faster, but a higher chance of being kicked
+
+MAX_DISTANCE = math.clamp(MAX_DISTANCE, 0, 25)
+
+-- Blehhh variables
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+
+local Systems = ReplicatedStorage:WaitForChild("Systems")
+local Combat = Systems:WaitForChild("Combat")
+
+local PlayerAttack = Combat:WaitForChild("PlayerAttack")
+local Pickup = Systems:WaitForChild("Drops"):WaitForChild("Pickup")
+local Drops = ReplicatedStorage:WaitForChild("Drops")
+
+-- Funcs obviously
+
+local function InRange(Object)
+    assert(Object:IsA("Model") or Object:IsA("BasePart"), "ok retard now it's broken")
+
+    local Position = Object:IsA("Model") and Object:GetPivot().Position or Object.Position
+    local Character = Player.Character
+    
+    if not Character then return false end
+
+    return (Position - Character:GetPivot().Position).Magnitude <= MAX_DISTANCE
+end
+
+local function Attack(Mob)
+    PlayerAttack:FireServer({Mob})
+end
+
+-- Auto pickup
+
+for i,v in next, Drops:GetChildren() do
+    if v:IsA("Folder") then
+        Pickup:FireServer(v)
+    end
+end
+
+Drops.ChildAdded:Connect(function(Child)
+    if Child:IsA("Folder") then
+        Pickup:FireServer(Child)
+    end
+end)
+
+-- SCHIZO FPS BOOST BECAUSE A SPED CODED THIS GAME
+
+workspace.ChildAdded:Connect(function(Child)
+    if Child:IsA("Part") and (Child.Name == "Part" or Child.Name == "DamageNumber") then
+        task.wait()
+        task.spawn(Child.Destroy, Child)
+    end
+end)
+
+workspace.Effects.ChildAdded:Connect(function(Child)
+    if Child.Name == "HitEffect" then
+        task.wait()
+        task.spawn(Child.Destroy, Child)
+    end
+end)
+
+for i,v in next, getgc(true) do if typeof(v) == "table" and rawget(v, "ShowDamageNumber") then rawset(v, "ShowDamageNumber", function()end) end end
+
+-- Omg haiii it's the actual killauwa :3 uwu owo x3 nya
+
+local Mobs = workspace:WaitForChild("Mobs")
+local LastSwing = tick()
+
+while task.wait() do
+    local NewTick = tick()
+    local Cooldown = NewTick - LastSwing
+    
+    for i, v in next, Mobs:GetChildren() do
+        if v:IsA("Model") and InRange(v) and v:GetAttribute("HP") > 0 and Cooldown > SPEED then
+            Attack(v)
+            LastSwing = NewTick
+        end
+    end
+end
